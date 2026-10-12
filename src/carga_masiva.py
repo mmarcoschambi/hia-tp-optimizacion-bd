@@ -5,9 +5,9 @@ import mysql.connector
 # Configuración de la conexión a tu base de datos local
 db_config = {
     'host': 'localhost',
-    'port': 3307,
+    'port': 3306,
     'user': 'root',
-    'password': 'Apu2008@',  # Cambia por tu contraseña de MySQL
+    'password': 'root',
     'database': 'hotel_db'
 }
 
