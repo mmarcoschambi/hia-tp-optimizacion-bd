@@ -1,0 +1,37 @@
+schema_version: 2
+kind: assignment
+course_id: herramientas_informaticas_avanzadas
+placement:
+  published_under: null
+coverage:
+  scopes: []
+assignment:
+  id: trabajo_practico_diseno_optimizacion_bases_datos_avanzado
+  title: trabajo_practico_diseno_optimizacion_bases_datos_avanzado
+sources:
+  statement:
+    path: consigna/Trabajo_Practico_Diseno_Optimizacion_Bases_Datos_Avanzado.pdf
+    sha256: ccc9f67e269c5b7b0652af2c967404e3107be72406caf27b712aec3d42026f85
+    size_bytes: 71629
+classification:
+  course:
+    value: herramientas_informaticas_avanzadas
+    confidence: 1.0
+    source: deterministic
+  unit: null
+  kind:
+    value: assignment
+    confidence: 1.0
+    source: deterministic
+  routing_confidence: 1.0
+  placement:
+    value: general
+    confidence: 1.0
+    source: deterministic_empty_scope_v2
+semantic:
+  topic:
+    value: trabajo_practico_diseno_optimizacion_bases_datos_avanzado
+    source: deterministic
+status:
+  phase: detected
+  git_initialized: false

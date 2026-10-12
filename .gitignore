@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+
+# Heavy database dumps & data
+*.sql
+*.sql.gz
+data/
+
+# Local tooling & locks
+.atl/
+*.lock
+
+# FACU derived corpus cache
+derived/
