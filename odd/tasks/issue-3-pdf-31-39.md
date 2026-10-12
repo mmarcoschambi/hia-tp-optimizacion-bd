@@ -6,7 +6,7 @@ Decision: user selected authoritative PDF numbering over issue shorthand. PDF pa
 
 ## Objective
 
-Provide reproducible MySQL/MariaDB experiments for optimizer statistics, cost, JOIN, eight query optimizations and two-session locking/concurrency; document observations only if run against hotel_db. No database client/server detected locally; deterministic checks cannot replace runtime evidence.
+Provide reproducible MariaDB experiments for optimizer statistics, cost, JOIN, eight query optimizations and two-session locking/concurrency; document observations only if run against hotel_db. Local MariaDB 10.6 was explicitly authorized as a disposable lab; deterministic checks complement, not replace, runtime evidence.
 
 ## Tasks
 
@@ -14,8 +14,9 @@ Provide reproducible MySQL/MariaDB experiments for optimizer statistics, cost, J
 - [x] Unit B: Build safe two-session locking/concurrency experiments (38–39), documentation and deterministic validation. Commit identity: `793de86`. Check: `python src/validate_parte_viii.py` passed (offline only). Live blocking observations pending a database.
 - [x] Final: update issue tasks.md with verified evidence and explicit pending live measurements. Offline structural checks and 22 read-only EXPLAIN statements passed. Commit identity: `5ec43e3`.
 - [x] Lab concurrency: user authorized localhost:3306/hotel_db as disposable TP environment; corrected B's autocommit precondition and measured table/row waits with two sessions. Commit identity: `4581b79`. Check: structural validator, py_compile and `python src/run_parte_viii_lab.py --run` passed; observed 1.513 s table and 1.503 s row wait, plain read 0.001 s, final value unchanged.
-- [ ] Lab optimizer: bounded eight-pair measurements, statistics/index choices and write overhead; report unavailable cost fields. Commit identity: pending.
+- [x] Lab optimizer: bounded eight-pair plan/measurement variants, refreshed statistics, four index builds, rollback-only write probes, keyset page equivalence and 18-room temporary JOIN fixture. Commit identity: `2255c56`. Checks: validators, py_compile, 22 EXPLAIN statements passed. Limits: no numeric cost_info, exact COUNT(*) timed out after 60 s, Q3 originals timed out at 12 s, Q6 real JOIN empty, Q1–Q6 measured count variants, only one pass. All owned indexes removed.
 - [ ] Close evidence: update docs/tasks with observed results, limitations and checks; record commit identity. Commit identity: pending.
+- [ ] Follow-up: repeat payload queries with controlled cache/snapshot, obtain representative hotel master rows for real JOIN, and measure INSERT/DELETE overhead before claiming a general performance improvement.
 
 ## Constraints
 
