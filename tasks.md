@@ -1,19 +1,27 @@
-# Tasks: feat(benchmark): punto 23 benchmark de cache frio vs caliente sobre 6M filas
+# Tasks: feat(queries): parte V consultas complejas de negocio puntos 24 al 30
 
 ### Objetivo
-Ejecutar y documentar el Punto 23 del Trabajo Practico de Optimizacion de BD.
-
-### Enfoque Didactico (Matt Teach / Arquitectura de BD)
-- No quedarse solo con numeros frios: explicar el *por que* mecanico (paginas leidas de disco vs InnoDB Buffer Pool en RAM).
-- Comprender el ciclo de vida de los datos y como el motor gestiona bloques (LRU) antes de escribir conclusiones.
+Disenar, optimizar y documentar las consultas complejas de la Parte V (Puntos 24 al 30).
 
 ### Tareas
-- [x] Ejecutar prueba de rendimiento Cold Cache vs Warm Cache con src/test_cache.py sobre la tabla reserva (6.000.000 registros).
-  - Evidencia: tabla `reserva` verificada con 6.000.000 filas; corrida 1 = 15,4395 s; corrida 2 = 11,0120 s; corrida 3 = 10,0301 s.
-- [x] Documentar tiempos, speedup y explicacion conceptual del InnoDB Buffer Pool.
-  - Evidencia: `docs/HIA-BDOPTIMIZACION.docx` seccion 23 y `docs/benchmark_cache_punto_23.md`; speedup promedio contra cache caliente = 1,47x.
-- [x] Extraer y documentar el plan de ejecucion EXPLAIN FORMAT=JSON de la consulta.
-  - Evidencia: `access_type: ALL`, `rows: 5740499`, `filesort` y tabla temporal documentados en los artefactos.
+- [x] Punto 24: Consulta de reservas por rango de fechas y estado con conteo y montos.
+  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P24; validado por `src/validate_parte_v_sql.py`.
+- [x] Punto 25: Relacion con huespedes e historial usando INNER JOIN y LEFT JOIN.
+  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P25; documentado en `docs/parte_v_consultas_negocio.md`.
+- [x] Punto 26: Analisis de ocupacion por hotel y tipo de habitacion.
+  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P26 con cálculo de solapamiento de fechas.
+- [x] Punto 27: Deteccion de patrones de cancelacion con subconsultas / EXISTS.
+  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P27 con `EXISTS` y `HAVING`.
+- [x] Punto 28: Segmentacion de clientes y clasificacion condicional con CASE WHEN.
+  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P28 con CTE de métricas y `CASE WHEN`.
+- [x] Punto 29: Agregaciones avanzadas con GROUP BY, HAVING y ordenamiento por rendimiento.
+  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P29 con KPIs hotel/tipo.
+- [x] Punto 30: Estrategia de paginacion eficiente sobre grandes volumenes (evitar OFFSET alto).
+  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P30 con keyset pagination y sin `OFFSET`.
+- [x] Documentacion conceptual, comparativas y justificaciones.
+  - Evidencia: `docs/parte_v_consultas_negocio.md`.
+- [x] Validaciones sintacticas/deterministicas.
+  - Evidencia: `python src/validate_parte_v_sql.py` ejecutado correctamente.
 
-URL: https://github.com/mmarcoschambi/hia-tp-optimizacion-bd/issues/1
+URL: https://github.com/mmarcoschambi/hia-tp-optimizacion-bd/issues/2
 Labels:
