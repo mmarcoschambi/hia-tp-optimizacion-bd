@@ -1,27 +1,18 @@
-# Tasks: feat(queries): parte V consultas complejas de negocio puntos 24 al 30
+# Tasks: issue #3 — PDF points 31–39
 
-### Objetivo
-Disenar, optimizar y documentar las consultas complejas de la Parte V (Puntos 24 al 30).
+Decision: use the authoritative course PDF numbering (page 5), not the original issue shorthand. PDF 31–33 = optimizer (Parte VI), 34–37 = optimization (Parte VII), 38–39 = concurrency (Parte VIII). The issue's leftmost-prefix theme is covered as an additional index experiment, not mislabeled as PDF P38–39.
 
-### Tareas
-- [x] Punto 24: Consulta de reservas por rango de fechas y estado con conteo y montos.
-  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P24; validado por `src/validate_parte_v_sql.py`.
-- [x] Punto 25: Relacion con huespedes e historial usando INNER JOIN y LEFT JOIN.
-  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P25; documentado en `docs/parte_v_consultas_negocio.md`.
-- [x] Punto 26: Analisis de ocupacion por hotel y tipo de habitacion.
-  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P26 con cálculo de solapamiento de fechas.
-- [x] Punto 27: Deteccion de patrones de cancelacion con subconsultas / EXISTS.
-  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P27 con `EXISTS` y `HAVING`.
-- [x] Punto 28: Segmentacion de clientes y clasificacion condicional con CASE WHEN.
-  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P28 con CTE de métricas y `CASE WHEN`.
-- [x] Punto 29: Agregaciones avanzadas con GROUP BY, HAVING y ordenamiento por rendimiento.
-  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P29 con KPIs hotel/tipo.
-- [x] Punto 30: Estrategia de paginacion eficiente sobre grandes volumenes (evitar OFFSET alto).
-  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P30 con keyset pagination y sin `OFFSET`.
-- [x] Documentacion conceptual, comparativas y justificaciones.
-  - Evidencia: `docs/parte_v_consultas_negocio.md`.
-- [x] Validaciones sintacticas/deterministicas.
-  - Evidencia: `python src/validate_parte_v_sql.py` ejecutado correctamente.
+- [x] P31–33: document statistics, estimated cardinality, cost-selection caveats and JOIN experiments.
+  - Evidence: `src/parte_vi_vii_experimentos.sql`, `docs/parte_vi_explain_indices.md` (including observed Q1/Q3/P32 JSON plans on local MariaDB 10.6).
+- [x] P34–37: supply eight original/alternative pairs, measurement protocol, index and write-side-effect hypotheses.
+  - Evidence: Q1–Q8 in `src/parte_vi_vii_experimentos.sql`; `docs/parte_vi_explain_indices.md` distinguishes hypotheses from measurements.
+- [x] P38–39: supply two-connection manual table/row locking protocol with bounded wait and rollback.
+  - Evidence: `src/parte_viii_session_a.sql`, `src/parte_viii_session_b.sql`, `docs/parte_viii_bloqueos.md`.
+- [x] Deterministic offline structural checks and read-only SQL plan syntax checks.
+  - Evidence: `python src/validate_parte_vi_vii.py` and `python src/validate_parte_viii.py` passed; all 22 `EXPLAIN FORMAT=JSON` statements executed successfully on MariaDB 10.6 via connector. Lock scripts and SELECT payloads were not executed.
+- [ ] Run all eight paired queries and record actual timings, cost fields where supported, real rows, refreshed statistics, JOIN effects and write overhead on a disposable database.
+  - Blocked: no disposable 6M-row instance authorized; local read-only EXPLAIN sample only. An exact `COUNT(*)` attempt exceeded 45 s.
+- [ ] Run P38–39 interactively in two sessions and record actual waits/errors; not safe to run automatically on the reachable database.
 
-URL: https://github.com/mmarcoschambi/hia-tp-optimizacion-bd/issues/2
-Labels:
+Issue: https://github.com/mmarcoschambi/hia-tp-optimizacion-bd/issues/3
+Work units: `6845362` (optimizer), `793de86` (concurrency); final evidence commit recorded in Git history.

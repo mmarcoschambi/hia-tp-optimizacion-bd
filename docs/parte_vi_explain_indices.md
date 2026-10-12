@@ -1,6 +1,6 @@
 # PDF 31–37: optimizer and eight optimization experiments
 
-Scope follows the **course PDF, page 5**, not issue #3's provisional numbering: 31–33 are Parte VI and 34–37 are Parte VII. The original issue's leftmost-prefix demonstration is retained as an additional index experiment below; PDF 38–39 belong to concurrency. This document is an **experiment protocol, not observed benchmark results**: no MySQL/MariaDB server/client was available in this checkout.
+Scope follows the **course PDF, page 5**, not issue #3's provisional numbering: 31–33 are Parte VI and 34–37 are Parte VII. The original issue's leftmost-prefix demonstration is retained as an additional index experiment below; PDF 38–39 belong to concurrency. This is an experiment protocol with a small set of **read-only observed plans**, not a completed benchmark. A local MariaDB server was reachable via Python connector; no MySQL CLI was found. No DDL, `ANALYZE TABLE`, full eight-pair timing run or concurrent lock experiment was performed.
 
 ## Reproduce without changing production
 
@@ -31,12 +31,29 @@ In a JOIN, read `nested_loop` order: outer estimated rows multiplied by inner lo
 | Q7 | `SELECT *` → two columns | Same filtering, smaller payload (not identical projection) | Only valid if caller needs the two columns |
 | Q8 | OFFSET 1000 → keyset after actual row 1000 | Same page under stable snapshot and unique order | Cursor acquisition is extra cost; updates between pages change results |
 
-P35 requires executing **both** query versions and measuring, not just EXPLAIN; P36's alternatives cover SARGability, covering/projection, composite indexes, JOIN and pagination. P37: measure secondary-index bytes (`information_schema.TABLES.INDEX_LENGTH` as rough table-level estimate) and representative write throughput/latency before/after on the copy; report any other query regressions. None of these runtime validations has been performed here.
+P35 requires executing **both** query versions and measuring, not just EXPLAIN; P36's alternatives cover SARGability, covering/projection, composite indexes, JOIN and pagination. P37: measure secondary-index bytes (`information_schema.TABLES.INDEX_LENGTH` as rough table-level estimate) and representative write throughput/latency before/after on the copy; report any other query regressions. Only selected read-only JSON plans were captured below; paired timings and write-side-effect validations have not been performed.
 
 ## Leftmost-prefix supplemental experiment (issue request, not PDF P38–39)
 
 For `idx_pvii_guest_date (id_huesped,fecha_inicio)`, compare `WHERE id_huesped=42`, `WHERE id_huesped=42 AND fecha_inicio >= '2024-01-01'`, and `WHERE fecha_inicio >= '2024-01-01'`. The last query cannot ordinarily seek by the second key part alone; some versions can choose a skip scan or full index scan, so check `access_type` and `used_key_parts`, not only `key`. An equality on first part plus range on second is generally useful; a range on first limits subsequent parts for seeking. `YEAR(fecha_inicio)`, implicit incompatible conversions (dependent on actual column type), and leading-wildcard `LIKE '%foo'` may prevent a normal B-tree seek, but the optimizer can still scan an index or use another one. Compare genuinely equivalent predicates and record measured plans; do not infer index usage solely from SQL text.
 
-## Status
+## Observed read-only plan sample (local MariaDB 10.6.23)
 
-Offline structural validation is available via `python src/validate_parte_vi_vii.py`. Live plans, eight paired timings, real JSON cost trees and write-side-effect measurements are **pending** a provisioned disposable database. No cost or timing in this document is an observation.
+Connected to local `hotel_db` with Python connector; `information_schema.TABLES.TABLE_ROWS` reported **5,740,499 estimated rows** (not an exact `COUNT(*)` or confirmation of 6M). `SHOW INDEX FROM reserva` returned `PRIMARY(id_reserva)`, `id_habitacion(id_habitacion)`, `id_huesped(id_huesped)`; no date or status index. These are **EXPLAIN estimates**, not runtime measurements. The initial attempt at exact `COUNT(*)` exceeded 45 seconds and was interrupted; no result was recorded.
+
+| Plan | MariaDB JSON `access_type`, `key`, `rows`, `filtered` | Interpretation |
+| --- | --- | --- |
+| Q1 original `YEAR(fecha_inicio)=2024` | `ALL`, none, 5,740,499, 100 | Function inhibits a date seek |
+| Q1 range rewrite | `ALL`, none, 5,740,499, 100 | No date index exists; SARGability alone cannot improve this observed plan |
+| Q3 `id_huesped + 0 = 42` | `index`, `id_huesped`, 5,740,499, 100 | Full covering-index scan; a non-null `key` does not prove selective seeking |
+| Q3 `id_huesped = 42` | `ref`, `id_huesped`, 18, 100 | Estimated 18 matching index entries |
+| P32 `estado_reserva='Finalizada'` | `ALL`, none, 5,740,499, 100 | No status index; not evidence of a cost-based rejection of an existing one |
+
+Actual observed MariaDB JSON subtrees (trimmed to relevant fields; **not MySQL `cost_info`**):
+
+```json
+{"query_block":{"table":{"table_name":"reserva","access_type":"index","key":"id_huesped","used_key_parts":["id_huesped"],"rows":5740499,"filtered":100,"attached_condition":"reserva.id_huesped + 0 = 42","using_index":true}}}
+{"query_block":{"table":{"table_name":"reserva","access_type":"ref","possible_keys":["id_huesped"],"key":"id_huesped","used_key_parts":["id_huesped"],"ref":["const"],"rows":18,"filtered":100,"using_index":true}}}
+```
+
+MariaDB 10.6 emitted `rows` rather than MySQL's `rows_examined_per_scan`, and these plans have **no `cost_info.query_cost` field**. Do not invent costs or treat `filtered=100` as measured selectivity. Offline structural validation: `python src/validate_parte_vi_vii.py`. Separately, all **22 read-only `EXPLAIN FORMAT=JSON` statements** in `src/parte_vi_vii_experimentos.sql` executed successfully via Python connector on the local MariaDB 10.6 server (comments removed; no DDL, ANALYZE or SELECT payload executed in that pass). Eight paired timings, exact row count, refreshed-statistics comparison, JOIN changes and index write-side-effect measurements remain **pending** on a disposable copy.
