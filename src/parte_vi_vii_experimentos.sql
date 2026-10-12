@@ -22,6 +22,7 @@ EXPLAIN FORMAT=JSON SELECT id_reserva FROM reserva WHERE estado_reserva = 'Final
 -- CREATE INDEX idx_pvii_guest_date ON reserva (id_huesped, fecha_inicio);
 -- CREATE INDEX idx_pvii_date_guest ON reserva (fecha_inicio, id_huesped);
 -- CREATE INDEX idx_pvii_state_date ON reserva (estado_reserva, fecha_inicio);
+-- CREATE INDEX idx_pvii_keyset ON reserva (fecha_inicio, id_reserva);
 -- DROP INDEX idx_pvii_guest_date ON reserva; -- only if this script created it
 -- DROP INDEX idx_pvii_date_guest ON reserva;
 -- DROP INDEX idx_pvii_state_date ON reserva;
@@ -91,6 +92,8 @@ ORDER BY fecha_inicio, id_reserva LIMIT 20 OFFSET 1000;
 -- Q8 optimized: replace literal cursor with the observed 1000th row; the
 -- example literals are placeholders, NOT a measured equivalent page.
 EXPLAIN FORMAT=JSON SELECT id_reserva, fecha_inicio FROM reserva
-WHERE (fecha_inicio, id_reserva) > ('2024-01-01', 1000)
+WHERE fecha_inicio > '2024-01-01'
+   OR (fecha_inicio = '2024-01-01' AND id_reserva > 1000)
 ORDER BY fecha_inicio, id_reserva LIMIT 20;
--- Index candidate for Q8: existing idx_reserva_keyset (fecha_inicio,id_reserva).
+-- Index candidate for Q8: idx_pvii_keyset (fecha_inicio,id_reserva).
+-- MariaDB 10.6 chose index scan for the tuple comparison; explicit OR enabled range.
