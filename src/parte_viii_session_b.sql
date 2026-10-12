@@ -2,6 +2,8 @@
 -- Do not source whole file. Use same existing id as session A.
 USE hotel_db;
 SELECT CONNECTION_ID(), @@version_comment;
+-- The local Python connector defaulted to autocommit=0; ensure B releases locks.
+SET SESSION autocommit = 1;
 SET SESSION lock_wait_timeout = 10;
 SET SESSION innodb_lock_wait_timeout = 10;
 

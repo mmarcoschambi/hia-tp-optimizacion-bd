@@ -4,7 +4,7 @@ from pathlib import Path
 root = Path(__file__).parent
 for name, markers in {
     "parte_viii_session_a.sql": ("P38 TABLE", "P38 ROW", "P39 ROW", "UNLOCK TABLES", "ROLLBACK"),
-    "parte_viii_session_b.sql": ("P38 TABLE", "P38 ROW", "P39 ROW", "innodb_lock_wait_timeout", "lock_wait_timeout"),
+    "parte_viii_session_b.sql": ("P38 TABLE", "P38 ROW", "P39 ROW", "innodb_lock_wait_timeout", "lock_wait_timeout", "SET SESSION autocommit = 1"),
 }.items():
     text = (root / name).read_text(encoding="utf-8")
     for marker in markers:
