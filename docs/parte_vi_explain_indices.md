@@ -86,7 +86,26 @@ Run `python src/run_parte_vi_vii_lab.py --run --stage baseline`, add each index 
 | Q7 | `ref` 18 both; narrow result may be covered | 1,083 → 412 bytes, 18 rows (Python JSON approximation); sample timings 0.337 → 0.001 s indexed | Different projections; not equal payload semantics or a reliable speedup estimate. |
 | Q8 | `index` ~1,020 → `range` ~2.99M estimate using explicit OR | 0.002 → 0.272 s, 20 rows each; pages identical | At OFFSET 1000, keyset was **slower** in this run; cursor acquisition extra. Tuple comparison selected an index scan, not range. |
 
-Q8's `range` estimated rows counts a broad date range, not actual 20 visited rows; neither this estimate nor `filtered=100` proves runtime selectivity. Q1–Q6 times are for count variants; Q7/Q8 fetch actual rows. The lab had no representative data for P33's real JOIN. Repeat with warm/cold controls and actual payload SELECTs before asserting a general latency improvement.
+Q8's `range` estimated rows counts a broad date range, not actual 20 visited rows; neither this estimate nor `filtered=100` proves runtime selectivity. The table above is the **earlier count-variant run** for Q1–Q6, not the subsequently repeated payload benchmark below. The lab had no representative data for P33's real JOIN.
+
+### Follow-up: repeated original payload SELECTs and cache policy
+
+The user authorized a second lab run of **actual payload SELECTs** with `python src/run_parte_vi_vii_payload.py --run --case Q1` (and Q2–Q8). Each case runs both variants once as a warm-up, then alternates variant order over 2–3 rounds; it streams batches of 512 rows without retaining millions of rows, caps statements at 20 seconds and client consumption at 30 seconds, and rolls back each read-only snapshot. MariaDB reported `query_cache_type=OFF` and a **128 MiB** InnoDB buffer pool. These are repeat-after-warm-up observations, **not controlled cold-cache experiments**: the buffer pool and OS cache were not flushed, 6M rows exceed the pool, and other server load was not controlled. Result equivalence for unordered SELECTs uses row count and a commutative SHA-256 sum including multiplicities; an order-sensitive digest would falsely differ when the optimizer changes the row order. Q8 keeps ordered page equivalence. Q7 intentionally changes the projection, so equal digests are not expected.
+
+The baseline below had only `PRIMARY`, `id_habitacion`, `id_huesped`; the indexed run added `(id_huesped,fecha_inicio)`, `(estado_reserva,fecha_inicio)` and `(fecha_inicio,id_reserva)`. All three were removed after the run and `ANALYZE TABLE` returned OK. Durations include fetching and hashing rows on the client, not just server execution; where a run hit its limit, it is marked **incomplete**, never used as a latency sample. Warm-ups are omitted from the ranges.
+
+| Pair | Baseline complete payload samples (s) | Indexed complete payload samples (s) | What can be concluded |
+| --- | --- | --- | --- |
+| Q1 (2,192,393 rows) | original 15.225–16.598; range 16.386–16.694 | corrected-hash paired sample original 13.832, range 13.228 | Multisets match within both stages; ~2M rows of transport/hash dominate, no stable improvement demonstrated. An earlier indexed warm-up exceeded the then-active 20 s client cap (later increased to 30 s). |
+| Q2 (6,003 rows) | `DATE()` 9.292–10.170; range 8.990–9.438 | `DATE()` 1.470–1.721; range 0.032–0.040; corrected-hash pair 1.688 / 0.037 | Multisets match; strong index+SARGability improvement for this selective day, conditional on the index being present. |
+| Q3 (18 matching rows) | expression incomplete >15 s; equality 0.003–0.004 | expression incomplete under 20 s cap; equality 0.002–0.042 | No completed expression latency; `index` scan vs `ref` is the defensible evidence. |
+| Q4 (9 rows) | duplicate SQL 0.002–0.003 after warm-up | duplicate SQL 0.002–0.003 | Both labels execute identical SQL per stage; before/after index did not show a robust payload latency gain at this scale. |
+| Q5 (27,627 rows) | duplicate SQL 9.472–10.114 (corrected-hash round) | duplicate SQL 0.135–0.163 (first rounds), 0.156–0.239 (corrected-hash round) | Multisets match; composite status/date index avoids full scan, but client hashing contributes and cache state is uncontrolled. |
+| Q6 (0 real JOIN rows) | 0.002–0.004 | 0.002–0.003 | Cannot infer JOIN speedup from an empty `habitacion`; see temporary fixture above. |
+| Q7 (18 rows) | 0.002–0.004 | 0.002–0.005 | Narrow projection changes bytes and semantics; timing indistinguishable at this scale. |
+| Q8 (20 rows) | Skipped: no keyset index, cursor ORDER BY required a full filesort | OFFSET 0.003; keyset 0.004 (three rounds), corrected-hash pair 0.002 / 0.002 | Ordered page matched, no latency advantage at offset 1000. Cursor lookup time is **excluded** from keyset sample and is an additional cost. |
+
+The corrected-hash Q1/Q2/Q5 rounds use extra client CPU versus earlier ordered-hash rounds; don't infer a precise cross-run speedup from mismatched hash algorithms. These results are single-host, warmed/repeated bounded observations, not generalized throughput claims. A fairer experiment would control external load and cache state, include cursor acquisition for Q8, and populate representative `habitacion` data for Q6. No query-cache hit can explain the measured differences because MariaDB query cache was OFF.
 
 ### P37 side effects and restoration
 

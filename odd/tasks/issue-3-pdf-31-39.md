@@ -16,7 +16,8 @@ Provide reproducible MariaDB experiments for optimizer statistics, cost, JOIN, e
 - [x] Lab concurrency: user authorized localhost:3306/hotel_db as disposable TP environment; corrected B's autocommit precondition and measured table/row waits with two sessions. Commit identity: `4581b79`. Check: structural validator, py_compile and `python src/run_parte_viii_lab.py --run` passed; observed 1.513 s table and 1.503 s row wait, plain read 0.001 s, final value unchanged.
 - [x] Lab optimizer: bounded eight-pair plan/measurement variants, refreshed statistics, four index builds, rollback-only write probes, keyset page equivalence and 18-room temporary JOIN fixture. Commit identity: `2255c56`. Checks: validators, py_compile, 22 EXPLAIN statements passed. Limits: no numeric cost_info, exact COUNT(*) timed out after 60 s, Q3 originals timed out at 12 s, Q6 real JOIN empty, Q1–Q6 measured count variants, only one pass. All owned indexes removed.
 - [x] Close evidence: update docs/tasks with observed results, limitations and checks. Commit identity: `5342793`. Checks: validators, py_compile and diff checks passed; no temporary indexes remain.
-- [ ] Follow-up: repeat payload queries with controlled cache/snapshot, obtain representative hotel master rows for real JOIN, and measure INSERT/DELETE overhead before claiming a general performance improvement.
+- [ ] Payload/cache work unit: benchmark original payload SELECTs in repeated, bounded warm-state runs; capture row equivalence, Q7 payload differences and Q8 page equivalence. Preserve database indexes and restore owned experimental indexes. Commit identity: pending.
+- [ ] Follow-up outside this request: obtain representative hotel master rows for real JOIN and measure INSERT/DELETE overhead before claiming a general performance improvement.
 
 ## Constraints
 

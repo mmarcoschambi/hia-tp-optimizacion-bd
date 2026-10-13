@@ -13,7 +13,9 @@ Decision: follow the authoritative course PDF numbering (page 5), not the origin
 - [x] P38–39: run bounded two-connection table and row lock experiments.
   - Evidence: `src/run_parte_viii_lab.py --run` observed B waiting while A held table READ and row FOR UPDATE locks; updates finished after release (1.513 s and 1.503 s); a plain row SELECT took 0.001 s; final value unchanged. See `docs/parte_viii_bloqueos.md`.
 - [x] Structural/syntax checks: both Python validators and `py_compile` passed; all 22 SQL `EXPLAIN FORMAT=JSON` statements succeeded on MariaDB 10.6 after revision.
-- [ ] Follow-up for rigorous performance claims: repeat original payload SELECTs with controlled cache/snapshot and report latency distributions; provision representative hotel master data for the real P33 JOIN; measure representative INSERT/DELETE overhead. Exact 6M-row COUNT(*) exceeded the 60-second statement limit and Q3 expression count variant exceeded 12 seconds; numeric JSON costs unavailable on this server.
+- [x] Run bounded repeated payload SELECTs with documented cache policy (query cache OFF; InnoDB buffer pool 128 MiB; no disruptive cache flush).
+  - Evidence: `src/run_parte_vi_vii_payload.py` and warm-up/alternating-order results in `docs/parte_vi_explain_indices.md`. Q1/Q2/Q5 result multisets match; Q3 expression exceeded the bounded deadline, so no complete latency is claimed. Q8 ordered pages match; cursor acquisition is excluded from its timing. Added indexes were removed after the run.
+- [ ] Follow-up for generalized performance claims: repeat on representative hotel master data for the real P33 JOIN, measure INSERT/DELETE overhead and account for other server load/cold-cache policy. Exact `COUNT(*)` exceeded 60 s; numeric MariaDB JSON cost fields are unavailable.
 
 Issue: https://github.com/mmarcoschambi/hia-tp-optimizacion-bd/issues/3
 Work units: `6845362`, `793de86`, `4581b79`, `2255c56`; evidence commit recorded in Git history. Existing `openspec/changes/issue-3/` is user-owned and was not staged.
