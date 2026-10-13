@@ -3,13 +3,18 @@ __pycache__/
 *.pyc
 
 # Heavy database dumps & data
-*.sql
+*.dump
+*.dump.sql
 *.sql.gz
 data/
 
 # Local tooling & locks
 .atl/
 *.lock
+CLAUDE.md
+AGENTS.md
+odd/
+openspec/
 
 # FACU derived corpus cache
 derived/
