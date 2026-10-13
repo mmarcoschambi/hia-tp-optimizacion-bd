@@ -1,27 +1,21 @@
-# Tasks: feat(queries): parte V consultas complejas de negocio puntos 24 al 30
+# Tasks: issue #3 — PDF points 31–39
 
-### Objetivo
-Disenar, optimizar y documentar las consultas complejas de la Parte V (Puntos 24 al 30).
+Decision: follow the authoritative course PDF numbering (page 5), not the original issue shorthand. PDF 31–33 = optimizer (Parte VI), 34–37 = optimization (Parte VII), 38–39 = concurrency (Parte VIII). Leftmost-prefix examples supplement the PDF tasks.
 
-### Tareas
-- [x] Punto 24: Consulta de reservas por rango de fechas y estado con conteo y montos.
-  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P24; validado por `src/validate_parte_v_sql.py`.
-- [x] Punto 25: Relacion con huespedes e historial usando INNER JOIN y LEFT JOIN.
-  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P25; documentado en `docs/parte_v_consultas_negocio.md`.
-- [x] Punto 26: Analisis de ocupacion por hotel y tipo de habitacion.
-  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P26 con cálculo de solapamiento de fechas.
-- [x] Punto 27: Deteccion de patrones de cancelacion con subconsultas / EXISTS.
-  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P27 con `EXISTS` y `HAVING`.
-- [x] Punto 28: Segmentacion de clientes y clasificacion condicional con CASE WHEN.
-  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P28 con CTE de métricas y `CASE WHEN`.
-- [x] Punto 29: Agregaciones avanzadas con GROUP BY, HAVING y ordenamiento por rendimiento.
-  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P29 con KPIs hotel/tipo.
-- [x] Punto 30: Estrategia de paginacion eficiente sobre grandes volumenes (evitar OFFSET alto).
-  - Evidencia: `src/parte_v_consultas_negocio.sql` sección P30 con keyset pagination y sin `OFFSET`.
-- [x] Documentacion conceptual, comparativas y justificaciones.
-  - Evidencia: `docs/parte_v_consultas_negocio.md`.
-- [x] Validaciones sintacticas/deterministicas.
-  - Evidencia: `python src/validate_parte_v_sql.py` ejecutado correctamente.
+- [x] P31–32: observe optimizer statistics, access choices and limitations of JSON cost reporting.
+  - Evidence: `docs/parte_vi_explain_indices.md`; `src/run_parte_vi_vii_lab.py` captured before/after `ANALYZE TABLE` cardinality estimates and an `ALL` versus covering `ref` choice. MariaDB 10.6 did not emit numeric `cost_info.query_cost`.
+- [x] P33: compare JOIN access with expression versus direct equality.
+  - Evidence: the real `habitacion` is empty, so both original joins return zero; an isolated 18-room temporary fixture in `src/run_parte_vi_vii_lab.py --stage join-fixture` produced `BNL` versus `eq_ref`, 18 rows each. Not evidence of speedup on representative hotel master data.
+- [x] P34–36: provide eight SQL pairs, bounded plan measurements, composite/covering indexes and leftmost-prefix checks.
+  - Evidence: `src/parte_vi_vii_experimentos.sql` Q1–Q8, `src/run_parte_vi_vii_lab.py`, `docs/parte_vi_explain_indices.md`. Q1–Q6 timings use count variants; Q7/Q8 fetch results. Q8 pages matched on the same snapshot, but keyset was slower at offset 1000.
+- [x] P37: record index footprint and rollback-only UPDATE probe; restore lab schema.
+  - Evidence: four indexes built and removed; `Index_length` estimate 269 MB before, 740 MB with all four, 298 MB after cleanup and statistics refresh. Single-row write timings in docs are not general INSERT/DELETE throughput.
+- [x] P38–39: run bounded two-connection table and row lock experiments.
+  - Evidence: `src/run_parte_viii_lab.py --run` observed B waiting while A held table READ and row FOR UPDATE locks; updates finished after release (1.513 s and 1.503 s); a plain row SELECT took 0.001 s; final value unchanged. See `docs/parte_viii_bloqueos.md`.
+- [x] Structural/syntax checks: both Python validators and `py_compile` passed; all 22 SQL `EXPLAIN FORMAT=JSON` statements succeeded on MariaDB 10.6 after revision.
+- [x] Run bounded repeated payload SELECTs with documented cache policy (query cache OFF; InnoDB buffer pool 128 MiB; no disruptive cache flush).
+  - Evidence: `src/run_parte_vi_vii_payload.py` and warm-up/alternating-order results in `docs/parte_vi_explain_indices.md`. Q1/Q2/Q5 result multisets match; Q3 expression exceeded the bounded deadline, so no complete latency is claimed. Q8 ordered pages match; cursor acquisition is excluded from its timing. Added indexes were removed after the run.
+- [ ] Follow-up for generalized performance claims: repeat on representative hotel master data for the real P33 JOIN, measure INSERT/DELETE overhead and account for other server load/cold-cache policy. Exact `COUNT(*)` exceeded 60 s; numeric MariaDB JSON cost fields are unavailable.
 
-URL: https://github.com/mmarcoschambi/hia-tp-optimizacion-bd/issues/2
-Labels:
+Issue: https://github.com/mmarcoschambi/hia-tp-optimizacion-bd/issues/3
+Work units: `6845362`, `793de86`, `4581b79`, `2255c56`; evidence commit recorded in Git history. Existing `openspec/changes/issue-3/` is user-owned and was not staged.
