@@ -6,6 +6,17 @@
 --   vacias; NO existe tipo_habitacion.
 -- REGLA DE ORO: nunca tocar la Reserva real sin avisar.
 -- Todo tiempo es [MEDIR]: cero numeros inventados.
+--
+-- ESTADO ACTUAL: ya ejecutado contra la base real. Los numeros medidos,
+-- el procedimiento que funciona y los intentos que fallaron estan en:
+--   docs/parte_x_particionamiento_resultados.md
+-- Corregido al ejecutarlo de verdad:
+--   1) Las FK impiden particionar -> el error real es 1217, no 1503.
+--   2) El EXPLAIN comun NO trae columna "partitions" en 10.6.23:
+--      la que la expone es EXPLAIN PARTITIONS.
+--   3) El ALTER monolítico NO completa con 6M filas y buffer pool de 128 MiB.
+--      Lo que si funciona: buffer pool en runtime + destino sin indices
+--      secundarios + carga por lotes + indices en bloque + RENAME de swap.
 -- ============================================================
 
 USE hotel_db;
@@ -29,7 +40,7 @@ WHERE TABLE_SCHEMA = 'hotel_db'
 -- ============================================================
 -- SEC 1 — MEDICION ANTES (tabla sin particionar)
 -- Rango 2023 SARGable: >= con < (limite superior exclusivo).
--- Mirar en EXPLAIN: type / key / rows / Extra / partitions.
+-- Mirar en EXPLAIN PARTITIONS: type / key / rows / Extra / partitions.
 -- partitions = NULL/vacio = tabla no particionada (esperado).
 -- ============================================================
 
@@ -48,7 +59,7 @@ WHERE fecha_inicio >= '2023-06-01'
 LIMIT 100;
 -- [MEDIR] tiempo real antes.
 
-EXPLAIN SELECT id_reserva, fecha_inicio, fecha_fin, estado_reserva
+EXPLAIN PARTITIONS SELECT id_reserva, fecha_inicio, fecha_fin, estado_reserva
 FROM Reserva
 WHERE fecha_inicio >= '2023-06-01'
   AND fecha_inicio < '2024-01-01'
@@ -57,19 +68,21 @@ LIMIT 100;
 
 -- ============================================================
 -- SEC 2 — PARTICIONAMIENTO (PELIGROSO: LEER ANTES DE EJECUTAR)
--- 1) InnoDB NO permite particionar una tabla con FK:
---    devuelve ERROR 1503 ("A PRIMARY KEY must include all
---    columns in the table's partitioning function" o
---    "A FOREIGN KEY constraint ... cannot be ... partitioned").
---    Hay que eliminar primero las FK de Reserva.
+-- 1) InnoDB NO permite particionar una tabla con FK.
+--    MEDIDO en MariaDB 10.6.23: falla con
+--    ERROR 1217 (23000) "Cannot delete or update a parent row:
+--    a foreign key constraint fails" (no es 1503).
+--    Hay que eliminar primero las FK de Reserva. Verificado tambien en una
+--    tabla descartable: la misma tabla SIN FK si se particiona.
 -- 2) La PK debe incluir la columna de particion:
 --    PK compuesta (id_reserva, fecha_inicio).
--- 3) El ALTER sobre ~6M filas TARDA VARIOS MINUTOS y bloquea
---    la tabla: hacerlo SOLO en una copia descartable, nunca
---    en produccion ni en la Reserva real sin aviso.
--- 4) YEAR(fecha_inicio) NO sirve para RANGE en 10.6 con
---    la funcion de particion: usar TO_DAYS(fecha_inicio),
---    que es monotona y SARGable para pruning por rango.
+-- 3) MEDIDO: el ALTER monolítico NO COMPLETA con 6M filas y buffer pool de
+--    128 MiB. Se estanca en "copy to tmp table" con ~2,9M row locks y
+--    0 writes/s. Tampoco sirve ALGORITHM=COPY. La migracion por lotes con
+--    el buffer pool elevado en runtime si completa (150 s).
+-- 4) RANGE COLUMNS(fecha_inicio) es la via recomendada: compara la columna
+--    DATE directamente, sin funcion de particion, y poda igual (medido:
+--    EXPLAIN PARTITIONS devuelve p_2023). YEAR() no hace falta.
 -- Todo lo de abajo va COMENTADO por defecto a proposito.
 -- ============================================================
 
@@ -108,8 +121,8 @@ LIMIT 100;
 
 -- ============================================================
 -- SEC 3 — MEDICION DESPUES + PRUNING (solo si se particiono)
--- Misma consulta de Sec 1. En EXPLAIN mirar la columna
--- partitions: debe decir p_2023 (una sola particion).
+-- Misma consulta de Sec 1. En EXPLAIN PARTITIONS mirar la columna
+-- partitions: debe decir p_2023 (una sola particion). MEDIDO: si.
 -- Comparar [MEDIR] antes vs despues; no se afirma % fijo.
 -- ============================================================
 
@@ -126,7 +139,7 @@ WHERE fecha_inicio >= '2023-06-01'
 LIMIT 100;
 -- [MEDIR] tiempo despues.
 
-EXPLAIN SELECT id_reserva, fecha_inicio, fecha_fin, estado_reserva
+EXPLAIN PARTITIONS SELECT id_reserva, fecha_inicio, fecha_fin, estado_reserva
 FROM Reserva
 WHERE fecha_inicio >= '2023-06-01'
   AND fecha_inicio < '2024-01-01'
