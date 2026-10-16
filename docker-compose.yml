@@ -1,0 +1,45 @@
+# Este compose es solo para reproducibilidad del entorno, NO usar para benchmark:
+# overlayfs + bridge + memoria del Engine contaminan los tiempos;
+# las mediciones del TP son las locales en Ubuntu.
+# Requiere archivo .env junto a este compose (ver .env.example).
+# Valores por defecto alineados con src/carga_masiva.py:
+# host localhost, puerto 3306, usuario root, clave root, base hotel_db.
+
+services:
+  db:
+    image: mariadb:10.6.23
+    container_name: hotel-db-tp
+    ports:
+      - "3306:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-root}
+      MARIADB_DATABASE: ${MARIADB_DATABASE:-hotel_db}
+      MARIADB_USER: ${MARIADB_USER:-app}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:-app}
+    command:
+      - --innodb-buffer-pool-size=128M
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+    volumes:
+      - hotel-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MARIADB_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # Servicio opcional para inspeccion visual (desactivado por defecto).
+  # Descomentar para usar Adminer en http://localhost:8080.
+  # adminer:
+  #   image: adminer:4.8.1
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+
+volumes:
+  hotel-db-data:
