@@ -16,5 +16,8 @@ AGENTS.md
 odd/
 openspec/
 
+# Secrets (copiar .env.example a .env)
+.env
+
 # FACU derived corpus cache
 derived/
